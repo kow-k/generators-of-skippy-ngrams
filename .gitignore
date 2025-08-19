@@ -180,9 +180,10 @@ cython_debug/
 .cursorignore
 .cursorindexingignore
 
-## Jupyter Notebookssetup
-
-*.ipynob
+# Jupyter Notebookssetup
+*.ipynb
 !run-gen_ngrams.ipynb
 
+# VS Code
 .vscode
+.vscode/
