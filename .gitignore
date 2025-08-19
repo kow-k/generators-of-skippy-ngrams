@@ -180,7 +180,7 @@ cython_debug/
 .cursorignore
 .cursorindexingignore
 
-## Jupyter Notebookssetup(ext_modules = cythonize('gen_ngrams_cy.py'))
+## Jupyter Notebookssetup
 
 *.ipynob
 !run-gen_ngrams.ipynb
