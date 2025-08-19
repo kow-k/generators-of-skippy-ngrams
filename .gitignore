@@ -179,3 +179,10 @@ cython_debug/
 #  refer to https://docs.cursor.com/context/ignore-files
 .cursorignore
 .cursorindexingignore
+
+## Jupyter Notebookssetup(ext_modules = cythonize('gen_ngrams_cy.py'))
+
+*.ipynob
+!run-gen_ngrams.ipynb
+
+.vscode
