@@ -77,6 +77,9 @@ target/
 
 # Jupyter Notebook
 .ipynb_checkpoints
+.ipynb
+!run-gen_ngrams.ipynb
+
 
 # IPython
 profile_default/
@@ -179,10 +182,6 @@ cython_debug/
 #  refer to https://docs.cursor.com/context/ignore-files
 .cursorignore
 .cursorindexingignore
-
-# Jupyter Notebookssetup
-*.ipynb
-!run-gen_ngrams.ipynb
 
 # VS Code
 .vscode
