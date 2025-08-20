@@ -200,6 +200,9 @@ def gen_skippy_ngrams(L: list, n: int, extended: bool, inclusive: bool = False, 
     else:
         return [ sep.join(x) for x in R ]
 
+## aliases
+gen_sk_ngrams = gen_skippy_ngrams
+
 ## normal, continus n-gram generator
 def gen_ngrams (S: list, n: int, sep: str = " ", as_list: bool = False, check: bool = False):
     """
