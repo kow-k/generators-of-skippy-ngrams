@@ -10,6 +10,7 @@ Modified:
 2024/06/28: renamed variable 'splitter' to 'sep' for compatibility; implemented max_distance
 2024/11/24 fixed a serious bug that mishandles short input
 2025/01/03 added skppy_ngram_size, gen_extended_skippy_ngrams
+2025/08/20 re-designed gen_extended_skippy_ngrams function with a better and simpler algorith
 """
 
 ## imports
