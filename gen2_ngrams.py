@@ -2,7 +2,8 @@
 gen2_ngrams.py
 
 This is a Python script for generation of normal (i.e., continuous) n-grams and skippy (i.e., discontinuous) n-grams, regular or extended.
-This is a re-implementation of gen_ngrams.py and dispenses with gen_extended_skippy_ngrams(..). Now, gen_skippy_ngrams(..) generates extended skippy n-grams by setting extended = True.
+
+This script is a re-implementation of gen_ngrams.py and dispenses with gen_extended_skippy_ngrams(..). There are two main differences from its predecessor. First, gen_skippy_ngrams(..) generates extended skippy n-grams with option extended = True. Second, gen_skippy_ngrams(..) generates inclusive n-grams by default, thereby dispensing with incremental generation of 1-gram up to n-grams. This means, though, that you need to filter out less than n-grams or use option inclusive = False when you want properly n-grams.
 
 Created on 2025/08/20 by Kow Kuroda (kow.kuroda@gmail.com)
 
@@ -118,7 +119,7 @@ def remove_gaps(segs: list, gap_mark: str):
     return [ seg for seg in segs if seg != gap_mark ]
 
 ##
-def gen_skippy_ngrams(L: list, n: int, max_gap_size: int = None, extended: bool = True, inclusive: bool = False, sep: str = " ", gap_mark: str = "…", as_list: bool = False, verbose: bool = False, check: bool = True):
+def gen_skippy_ngrams(L: list, n: int, max_gap_size: int = None, extended: bool = True, inclusive: bool = True, sep: str = " ", gap_mark: str = "…", as_list: bool = False, verbose: bool = False, check: bool = True):
 
     """
     general generator function that can be called
