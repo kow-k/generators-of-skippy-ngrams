@@ -65,6 +65,10 @@ def gen_source(L: list, gap_mark: str = "…", as_tuple: bool = False):
 ##
 def count_elements(L: list, gap_mark: str = "…"):
 
+    """
+    counts the number of non-gap elements in a segment sequence and returns it
+    """
+
     #return len(x for x in L if x != gap_mark) # fails due to generator mishandling
     return len([ x for x in L if x != gap_mark ])
 
@@ -72,7 +76,7 @@ def count_elements(L: list, gap_mark: str = "…"):
 def simplify_gaps(segs: list, gap_mark: str, verbose: bool = False, check: bool = False):
 
     """
-    simplify repeated gap_marks for the defintion of extended skippiness
+    simplifies repeated gap_marks in compliance to the definition of extended skippiness
     """
 
     ##
@@ -108,6 +112,9 @@ def simplify_gaps(segs: list, gap_mark: str, verbose: bool = False, check: bool 
 
 ##
 def remove_gaps(segs: list, gap_mark: str):
+
+    """simply removes all gaps in a segment list and returns the result"""
+    
     return [ seg for seg in segs if seg != gap_mark ]
 
 ##
