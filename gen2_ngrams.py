@@ -1,3 +1,6 @@
+#!/usr/bin/env python3
+# -*- encoding: utf-8 -*-
+
 """
 gen2_ngrams.py
 
@@ -8,7 +11,8 @@ This script is a re-implementation of gen_ngrams.py and dispenses with gen_exten
 Created on 2025/08/20 by Kow Kuroda (kow.kuroda@gmail.com)
 
 Modifications
-2025/08/21 i) revised the algorithm to avoid unwanted removal of duplicates; ii) simplified the processing;
+2025/08/21 1) revised the algorithm to avoid unwanted removal of duplicates; 2) simplified the processing;
+2025/08/22 made minor changes;
 
 """
 
@@ -244,10 +248,50 @@ def gen_skippy_ngrams(L: list, n: int, max_gap_size: int = None, extended: bool 
     else:
         return [ sep.join(x) for x in Q ]
 
-### end of file
+##
+def test_gen_ngrams(docs, max_n_for_ngram: int, inclusive: bool = True, check: bool = False, verbose: bool = False, reordered: bool = True):
 
+    ## generate skippy n-grams recursively
+    import pprint as pp
+    for i, doc in enumerate(docs):
+        print("------------------------------------")
+        print(f"generating skippy n-grams from word {i}: {doc}")
+        doc_segs = segment(doc)
+        print(f"doc_segs: {doc_segs}")
+        for i in range(1, max_n_for_ngram + 1):
+            print(f"normal {i}-grams with inclusive = {inclusive} ...")
+            O = gen_ngrams(doc_segs, i, inclusive = inclusive, sep = "", as_list = False, check = False)
+            if reordered:
+                O = sorted(O, key = lambda x: count_elements(x))
+            pp.pprint(O)
 
+##
+def test_gen_skippy_ngrams(docs, max_n_for_ngram: int, max_gap_size: int, inclusive: bool = True, extended: bool = True, check: bool = False, verbose: bool = False, reordered: bool = True):
+
+    ## generate skippy n-grams recursively
+    import pprint as pp
+    for i, doc in enumerate(docs):
+        print("------------------------------------")
+        print(f"generating skippy n-grams from word {i}: {doc}")
+        doc_segs = segment(doc)
+        print(f"doc_segs: {doc_segs}")
+        for i in range(1, max_n_for_ngram + 1):
+            print(f"skippy {i}-grams with max_gap_size = {max_gap_size}, extended = {extended}, inclusive = {inclusive} ...")
+            O = gen_skippy_ngrams(doc_segs, i, max_gap_size, extended = extended, inclusive = inclusive, sep = "", as_list = False, check = False)
+            if reordered:
+                O = sorted(O, key = lambda x: count_elements(x))
+            pp.pprint(O)
+
+##
 if __name__ == "__main__":
-    pass
 
+    s = "you are truly my true woman"
+    docs = s.split()
+    print(f"docs: {docs}")
+    
+    ## test gen_skippy_ngrams
+    test_gen_ngrams(docs, max_n_for_ngram = 3, inclusive = True, check = False)
+    ## test gen_ngrams
+    test_gen_skippy_ngrams(docs, max_n_for_ngram = 3, max_gap_size = 3, inclusive = True, check = False)
+    
 ### end of file
