@@ -3,7 +3,7 @@ gen2_ngrams.py
 
 This is a Python script for generation of normal (i.e., continuous) n-grams and skippy (i.e., discontinuous) n-grams, regular or extended.
 
-This script is a re-implementation of gen_ngrams.py and dispenses with gen_extended_skippy_ngrams(..). There are two main differences from its predecessor. First, gen_skippy_ngrams(..) generates extended skippy n-grams with option extended = True. Second, gen_skippy_ngrams(..) generates inclusive n-grams by default, thereby dispensing with incremental generation of 1-gram up to n-grams. This means, though, that you need to filter out less than n-grams or use option inclusive = False when you want properly n-grams.
+This script is a re-implementation of gen_ngrams.py and dispenses with gen_extended_skippy_ngrams(..). There are two main differences from its predecessor. First, gen_skippy_ngrams(..) generates extended skippy n-grams with option extended = True. Second, gen_skippy_ngrams(..) optionally generates inclusive n-grams by "inclusive = True" option, thereby dispensing with incremental generation of 1-gram up to n-grams afterwards.
 
 Created on 2025/08/20 by Kow Kuroda (kow.kuroda@gmail.com)
 
@@ -13,16 +13,16 @@ Modifications
 """
 
 ##
-def gen_ngrams (S: list, n: int, sep: str = " ", as_list: bool = False, check: bool = False):
+def gen_ngrams (S: list, n: int, inclusive: bool = False, sep: str = " ", as_list: bool = False, check: bool = False):
     """
     takes a list S of segments and returns a list R of n-grams out of them.
     """
-    
+
     assert n > 0
     ##
     if check:
         print(f"#S: {S}")
-    
+
     ##
     segs = [ seg for seg in S if len(seg) > 0 ]
     if len(segs) <= n:
@@ -30,16 +30,26 @@ def gen_ngrams (S: list, n: int, sep: str = " ", as_list: bool = False, check: b
             return [ segs ]
         else:
             return [ sep.join(segs) ]
-    
+
     ## main
     R = [ ]
-    for i in range(len(segs)):
-        try:
-            gram = segs[i : i + n] # get an n-gram
-            if len(gram) == n:
-                R.append(gram)
-        except IndexError:
-            pass
+    if inclusive:
+        for n in range(1, n + 1):
+            for i in range(len(segs)):
+                try:
+                    gram = segs[i : i + n] # get an n-gram
+                    if len(gram) == n:
+                        R.append(gram)
+                except IndexError:
+                    pass
+    else:
+        for i in range(len(segs)):
+            try:
+                gram = segs[i : i + n] # get an n-gram
+                if len(gram) == n:
+                    R.append(gram)
+            except IndexError:
+                pass
     ##
     if as_list:
         return R
@@ -57,7 +67,7 @@ def segment(t: str, pattern: str = r"", as_tuple: bool = False):
 
 ##
 def gen_source(L: list, gap_mark: str = "…", as_tuple: bool = False):
-    
+
     if as_tuple:
         return ( (x, y) for x, y in zip(L, gap_mark * len(L)) )
     else:
@@ -83,7 +93,7 @@ def simplify_gaps(segs: list, gap_mark: str, verbose: bool = False, check: bool 
     ##
     if check:
         print(f"input segs: {segs}")
-    
+
     ## main
     R = [ ]
     R_size = len(R)
@@ -105,7 +115,7 @@ def simplify_gaps(segs: list, gap_mark: str, verbose: bool = False, check: bool 
             if len(R) > R_size:
                 print(f"added seg{i}: {seg}")
         R_size = len(R) # update
-    
+
     ##
     if check:
         print(f"R: {R}")
@@ -115,16 +125,16 @@ def simplify_gaps(segs: list, gap_mark: str, verbose: bool = False, check: bool 
 def remove_gaps(segs: list, gap_mark: str):
 
     """simply removes all gaps in a segment list and returns the result"""
-    
+
     return [ seg for seg in segs if seg != gap_mark ]
 
 ##
-def gen_skippy_ngrams(L: list, n: int, max_gap_size: int = None, extended: bool = True, inclusive: bool = True, sep: str = " ", gap_mark: str = "…", as_list: bool = False, verbose: bool = False, check: bool = True):
+def gen_skippy_ngrams(L: list, n: int, max_gap_size: int = None, extended: bool = True, inclusive: bool = False, sep: str = " ", gap_mark: str = "…", as_list: bool = False, verbose: bool = False, check: bool = True):
 
     """
     general generator function that can be called
     """
-    
+
     assert n > 0
 
     ## filter out empty elements
@@ -146,14 +156,14 @@ def gen_skippy_ngrams(L: list, n: int, max_gap_size: int = None, extended: bool 
         search_span = max_gap_size
         if check:
             print(f"search is divided with span: {search_span} < len(segs): {len(segs)}")
-    
+
     ## generate a lattice of segs, with or without subdivision
     import itertools
     if not divided:
         #P = itertools.product(gen_source(segs)) # not work!
         P = list(itertools.product(*gen_source(segs))) # list(..) is needed to retain result
     else:
-        subsegs_set = gen_ngrams(segs, search_span, sep = sep, as_list = True)
+        subsegs_set = gen_ngrams(segs, search_span, inclusive = False, sep = sep, as_list = True)
         set_size = len(subsegs_set)
         P = [ ]
         Px = [ ] # checker of iso-forms
@@ -174,7 +184,7 @@ def gen_skippy_ngrams(L: list, n: int, max_gap_size: int = None, extended: bool 
             ##
             if check:
                 print(f"{i} subsegs1: {subsegs}")
-            
+
             ## filter out iso-forms
             for p in list(itertools.product(*gen_source(subsegs))):
                 px = simplify_gaps(p, gap_mark)
@@ -186,7 +196,7 @@ def gen_skippy_ngrams(L: list, n: int, max_gap_size: int = None, extended: bool 
     ##
     if check:
         print(f"P0: {P}")
-    
+
     ## make result fit to unextended version
     if not extended:
         X = [ ]
@@ -200,7 +210,7 @@ def gen_skippy_ngrams(L: list, n: int, max_gap_size: int = None, extended: bool 
         P = X
     if check:
         print(f"P: {P}")
-    
+
     ## regulate gaps
     Q = [ ]
     for i, p in enumerate(P):
@@ -218,14 +228,14 @@ def gen_skippy_ngrams(L: list, n: int, max_gap_size: int = None, extended: bool 
             if segs_size <= n:
                 q = simplify_gaps(p, gap_mark = gap_mark, check = check)
                 Q.append(q)
-    
+
     ## remove gap_mark singleton
     Q = [ p for p in Q if count_elements(p) > 0 ]
-    
+
     ## handle 1-grams
     if not extended:
         Q = [ remove_gaps(p, gap_mark) if count_elements(p) == 1 and len(p) > 1 else p for p in Q ]
-    
+
     ## return
     if check:
         print(f"Q: {Q}")
@@ -233,5 +243,11 @@ def gen_skippy_ngrams(L: list, n: int, max_gap_size: int = None, extended: bool 
         return Q
     else:
         return [ sep.join(x) for x in Q ]
+
+### end of file
+
+
+if __name__ == "__main__":
+    pass
 
 ### end of file
