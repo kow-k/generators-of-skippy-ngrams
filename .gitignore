@@ -7,6 +7,11 @@ __pycache__/
 !gen2_ngrams.py
 !setup.py
 
+# Jupyter Notebook
+.ipynb_checkpoints
+*.ipynb
+!gen_ngrams-runner.ipynb
+
 # C extensions
 *.so
 *.c
@@ -79,12 +84,6 @@ docs/_build/
 # PyBuilder
 .pybuilder/
 target/
-
-# Jupyter Notebook
-.ipynb_checkpoints
-*.ipynb
-!run-gen_ngrams.ipynb
-
 
 # IPython
 profile_default/
