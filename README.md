@@ -10,5 +10,13 @@ Availablity of Cython-enhancement is limited. Apple Silicons like M1 and M2 (M3 
 ## Files
 
 1. [gen_ngram_runner.ipynb (Jupyter notebook)](gen_ngram_runner.ipynb)
+
+This is a Jupyter notebook that demonstrates how to use "gen2_ngrams.py" (or "gen2_ngrams_cy.pyx").
+
 2. [gen2_ngrams.py (Python file)](gen2_ngrams.py)
+
+This is a Python script/module that can be imporeted from a Python program.
+
 3. [gen2_ngrams_cy.pyx (Cython file)](gen2_ngrams_cy.pyx)
+
+This is a Cython script/module that can be imporeted from a Python program.
