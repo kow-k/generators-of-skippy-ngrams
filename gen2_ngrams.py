@@ -272,6 +272,9 @@ def gen_skippy_ngrams(L: list, n: int, max_gap_size: int = None, extended: bool 
     else:
         return [ sep.join(x) for x in Q ]
 
+## aliases
+gen_sk_ngrams = gen_skippy_ngrams
+
 ##
 def test_gen_ngrams(docs, max_n_for_ngram: int, inclusive: bool = True, as_list: bool = False, check: bool = False, verbose: bool = False, reordered: bool = True):
 
