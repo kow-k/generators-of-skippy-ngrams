@@ -2,17 +2,16 @@
 # -*- encoding: utf-8 -*-
 
 """
-gen2_ngrams.py
+gen2_ngrams_cy.pyx
 
-This is a Python script for generation of normal (i.e., continuous) n-grams and skippy (i.e., discontinuous) n-grams, regular or extended.
+This is a Cython-compatible Python script for generation of normal (i.e., continuous) n-grams and skippy (i.e., discontinuous) n-grams, regular or extended.
 
 This script is a re-implementation of gen_ngrams.py and dispenses with gen_extended_skippy_ngrams(..). There are two main differences from its predecessor. First, gen_skippy_ngrams(..) generates extended skippy n-grams with option extended = True. Second, gen_skippy_ngrams(..) optionally generates inclusive n-grams by "inclusive = True" option, thereby dispensing with incremental generation of 1-gram up to n-grams afterwards.
 
-Created on 2025/08/20 by Kow Kuroda (kow.kuroda@gmail.com)
+Creation
+2025/08/22 by Kow Kuroda (kow.kuroda@gmail.com) by converting gen2_ngrams.py to gen2_ngrams.pyx using encrypt.py [https://github.com/Pranjalab/pyencrypt] with renaming it to gen2_ngrams_cy.pyx for disambiguation with gen2_ngrams.py.
 
 Modifications
-2025/08/21 1) revised the algorithm to avoid unwanted removal of duplicates; 2) simplified the processing;
-2025/08/22 made minor changes;
 
 """
 
@@ -82,22 +81,29 @@ def segment(t: str, pattern: str = r"", as_tuple: bool = False):
         return [ x for x in re.split(pattern, t) if len(x) > 0 ]
 
 ##
-def gen_source(L: list, gap_mark: str = "…", as_tuple: bool = False):
+def gen_source(L: list, gap_mark: str = "…"):
 
-    if as_tuple:
-        return ( (x, y) for x, y in zip(L, gap_mark * len(L)) )
-    else:
-        return [ (x, y) for x, y in zip(L, gap_mark * len(L)) ]
+    ## for Cython compatibility
+    #return [ [x, y] for x, y in zip(L, gap_mark * len(L)) ]
+    return [ (x, y) for x, y in zip(L, gap_mark * len(L)) ]
 
 ##
-def count_elements(L: list, gap_mark: str = "…"):
+def gen_source_prev(L: list, gap_mark: str = "…", as_tuple: bool = False):
+
+    if as_tuple:
+        return ( [x, y] for x, y in zip(L, gap_mark * len(L)) )
+    else:
+        #return [ (x, y) for x, y in zip(L, gap_mark * len(L)) ]
+        return [ [x, y] for x, y in zip(L, gap_mark * len(L)) ] # for Cython compatibility
+##
+def count_elements(segs: list, gap_mark: str = "…"):
 
     """
     counts the number of non-gap elements in a segment sequence and returns it
     """
 
-    #return len(x for x in L if x != gap_mark) # fails due to generator mishandling
-    return len([ x for x in L if x != gap_mark ])
+    #return len(seg for seg in segs if x != gap_mark) # fails due to generator mishandling
+    return len([ seg for seg in segs if seg != gap_mark ])
 
 ##
 def simplify_gaps(segs: list, gap_mark: str, verbose: bool = False, check: bool = False):
@@ -245,24 +251,24 @@ def gen_skippy_ngrams(L: list, n: int, max_gap_size: int = None, extended: bool 
         if check:
             print(f"p{i}: {p}")
         ##
-        segs_size = count_elements(p)
+        segs_size = count_elements(list(p))
         if check:
             print(f"segs_size: {segs_size}")
         if not inclusive:
             if segs_size == n:
-                q = simplify_gaps(p, gap_mark = gap_mark, check = check)
+                q = simplify_gaps(list(p), gap_mark = gap_mark, check = check)
                 Q.append(q)
         else:
             if segs_size <= n:
-                q = simplify_gaps(p, gap_mark = gap_mark, check = check)
+                q = simplify_gaps(list(p), gap_mark = gap_mark, check = check)
                 Q.append(q)
 
     ## remove gap_mark singleton
-    Q = [ p for p in Q if count_elements(p) > 0 ]
+    Q = [ p for p in Q if count_elements(list(p)) > 0 ]
 
     ## handle 1-grams
     if not extended:
-        Q = [ remove_gaps(p, gap_mark) if count_elements(p) == 1 and len(p) > 1 else p for p in Q ]
+        Q = [ remove_gaps(p, gap_mark) if count_elements(list(p)) == 1 and len(p) > 1 else p for p in Q ]
 
     ## return
     if check:
@@ -286,7 +292,7 @@ def test_gen_ngrams(docs, max_n_for_ngram: int, inclusive: bool = True, as_list:
             print(f"normal {i}-grams with inclusive = {inclusive} ...")
             O = gen_ngrams(doc_segs, i, inclusive = inclusive, sep = "", as_list = as_list, check = False)
             if reordered:
-                O = sorted(O, key = lambda x: count_elements(x), reverse = True)
+                O = sorted(O, key = lambda x: count_elements(list(x)), reverse = True)
             pp.pprint(O)
 
 ##
@@ -303,7 +309,7 @@ def test_gen_skippy_ngrams(docs, max_n_for_ngram: int, max_gap_size: int, inclus
             print(f"skippy {i}-grams with max_gap_size = {max_gap_size}, extended = {extended}, inclusive = {inclusive} ...")
             O = gen_skippy_ngrams(doc_segs, i, max_gap_size, extended = extended, inclusive = inclusive, sep = "", as_list = as_list, check = False)
             if reordered:
-                O = sorted(O, key = lambda x: count_elements(x), reverse = True)
+                O = sorted(O, key = lambda x: count_elements(list(x)), reverse = True)
             pp.pprint(O)
 
 ##
