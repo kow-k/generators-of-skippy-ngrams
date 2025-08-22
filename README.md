@@ -1,4 +1,4 @@
-# Generators of (extended) (skippy) n-grams from words or sentences
+# Unified generators of (extended) (skippy) n-grams from words or sentences
 
 ## Overview
 
