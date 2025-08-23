@@ -7,15 +7,16 @@ __pycache__/
 !gen2_ngrams.py
 !setup.py
 
-# Cython
-
-*.pyx
-!gen2_ngrams_cy.pyx
-
 # Jupyter Notebook
 .ipynb_checkpoints
 *.ipynb
+!gen2_ngrams-runner.ipynb
 !gen_ngrams-runner.ipynb
+
+# Cython
+*.pyx
+!gen2_ngrams_cy.pyx
+!gen_ngrams_cy.pyx
 
 # C extensions
 *.so
