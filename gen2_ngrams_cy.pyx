@@ -28,7 +28,7 @@ def gen_ngrams (S: list, n: int, inclusive: bool = False, sep: str = " ", as_lis
 
     ##
     segs = [ seg for seg in S if len(seg) > 0 ]
-    if len(segs) < n:
+    if len(segs) <= n:
         if recursively:
             G = gen_ngrams(segs, n - 1, inclusive = inclusive, sep = sep, as_list = as_list, check = check, recursively = recursively)
             if as_list:
@@ -161,7 +161,7 @@ def gen_skippy_ngrams(L: list, n: int, max_gap_size: int = None, extended: bool 
 
     ## filter out empty elements
     segs = [ seg for seg in L if len(seg) > 0 ]
-    if len(segs) < n:
+    if len(segs) <= n:
         if recursively:
             G = gen_skippy_ngrams(segs, n - 1, max_gap_size = max_gap_size, extended = extended, inclusive = inclusive, sep = sep, gap_mark = gap_mark, as_list = as_list, verbose = verbose, check = check, recursively = recursively)
             if as_list:
