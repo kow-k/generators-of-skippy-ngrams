@@ -10,8 +10,8 @@ __pycache__/
 # Jupyter Notebook
 .ipynb_checkpoints
 *.ipynb
-!gen2_ngrams-runner.ipynb
-!gen_ngrams-runner.ipynb
+!test-gen2_ngrams.ipynb
+!test-gen_ngrams.ipynb
 
 # Cython
 *.pyx
