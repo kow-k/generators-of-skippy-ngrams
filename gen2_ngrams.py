@@ -27,6 +27,17 @@ def segment(t: str, pattern: str = r"", as_tuple: bool = False):
     else:
         return [ x for x in re.split(pattern, t) if len(x) > 0 ]
 
+def make_unique(L:list):
+
+    """
+    convert a list into another where no duplicates are allowed.
+    """
+    M = [ ]
+    for x in L:
+        if not x in M:
+            M.append(x)
+    return M
+
 ##
 def gen_source(L: list, gap_mark: str = "…", as_tuple: bool = False):
 
@@ -56,7 +67,11 @@ def count_gaps(L: list, gap_mark: str = "…"):
 
 ##
 def drop_gap_at_end(segs: list, gap_mark: str):
-    
+
+    """
+    drops gap_marker at the end to make unextended skippy n-grams
+    """
+
     F = []
     for i, seg in enumerate(segs):
         if seg != gap_mark:
@@ -79,7 +94,7 @@ def simplify_gaps(segs: list, gap_mark: str, verbose: bool = False, check: bool 
     ##
     if check:
         print(f"input segs: {segs}")
-    
+
     ## main
     R = [ ]
     R_size = len(R)
@@ -117,6 +132,7 @@ def remove_gaps(segs: list, gap_mark: str):
 ##
 ## Beware to make recursively = True. it procudes extra strings;
 def gen_ngrams (S: list, n_for_ngram: int, inclusive: bool = False, recursively: bool = False, sep: str = " ", as_list: bool = False, check: bool = False):
+
     """
     takes a list S of segments and returns a list R of n-grams out of them.
     """
@@ -127,17 +143,13 @@ def gen_ngrams (S: list, n_for_ngram: int, inclusive: bool = False, recursively:
 
     ##
     segs = [ seg for seg in S if len(seg) > 0 ]
-    if len(segs) <= n_for_ngram:
+    if len(segs) < n_for_ngram:
         if recursively:
             G = gen_ngrams(segs, n_for_ngram - 1, inclusive = inclusive, recursively = recursively, sep = sep, as_list = as_list, check = check)
+            G = make_unique(G)
             if as_list:
-                if not segs in G:
-                    G = G + segs
                 return G
             else:
-                g = sep.join(segs)
-                if not g in G:
-                    G.append(segs)
                 return [ sep.join(segs) for segs in G ]
         else:
             if as_list:
@@ -171,8 +183,9 @@ def gen_ngrams (S: list, n_for_ngram: int, inclusive: bool = False, recursively:
         return [ sep.join(r) for r in R ]
 
 ##
+##
 def filter_segs(subsegs_pool: list, n_for_ngram: int, max_gap_size: int, extended: bool = True, inclusive: bool = True, gap_mark: str = "…", verbose: bool = False, check: bool = False):
-    
+
     if check and verbose:
         print(f"#max_gap_size: {max_gap_size}")
     import itertools
@@ -180,38 +193,38 @@ def filter_segs(subsegs_pool: list, n_for_ngram: int, max_gap_size: int, extende
     for i, subsegs in enumerate(subsegs_pool):
         if check:
             print(f"#{i} subsegs: {subsegs}")
-        
+
         ## process over the segs of a given subsegs
         #for segs in list(itertools.product(*gen_source(subsegs))):
         ## The following code increases Cython-compatibility
         for i, segs in enumerate([ list(x) for x in itertools.product(*gen_source(subsegs)) ]):
             if check:
                 print(f"#{i} segs: {segs}")
-            
+
             ## define xsegs for later reference
             n_segs = len(segs)
             n_elements = count_elements(segs, gap_mark)
             n_gaps = count_gaps(segs, gap_mark)
             xsegs = simplify_gaps(segs, gap_mark = gap_mark, check = check)
-            
+
             ## exclude sequences of gap_markers
             if n_elements == 0:
                 if check:
                     print(f"#ignored: {segs} [n_elements: {n_elements} == 0]\n...")
                 continue
-            
+
             ## excludes segs longer then max_gap_size
             if n_segs > max_gap_size:
                 if check:
                     print(f"#ignored: {segs} [n_segs: {n_segs} > max_gap_size: {max_gap_size}]\n...")
                 continue
-            
+
             ## excludes if count_elements(p) > n_for_ngram
             if n_elements > n_for_ngram:
                 if check:
                     print(f"#ignored: {segs} [n_elements: {n_elements} > n_for_ngram: {n_for_ngram}]\n...")
                 continue
-            
+
             ## includes if and only if count_elements(p) == n_for_ngram
             if inclusive:
                 pass
@@ -220,7 +233,7 @@ def filter_segs(subsegs_pool: list, n_for_ngram: int, max_gap_size: int, extende
                     if check:
                         print(f"#ignored: {segs} [n_elements: {n_elements} < n_for_ngram: {n_for_ngram}]\n...")
                     continue
-            
+
             ## select by extendedness
             if extended:
                 if n_elements == 1 and n_gaps == 0:
@@ -234,8 +247,9 @@ def filter_segs(subsegs_pool: list, n_for_ngram: int, max_gap_size: int, extende
                         xQ.append(xsegs)
                 elif segs[0] == gap_mark or segs[-1] == gap_mark:
                     if n_elements == 1:
-                        Q.append(segs)
-                        xQ.append(xsegs)
+                        if not segs in Q and not xsegs in xQ:
+                            Q.append(segs)
+                            xQ.append(xsegs)
                     else:
                         if check:
                             print(f"#ignored: {segs} [segs[0] or segs[-1] == gap_mark]\n...")
@@ -254,7 +268,7 @@ def filter_segs(subsegs_pool: list, n_for_ngram: int, max_gap_size: int, extende
     return Q
 
 ##
-def gen_skippy_ngrams(L: list, n_for_ngram: int, max_gap_size: int = None, extended: bool = True, inclusive: bool = True, recursively: bool = False, sep: str = " ", gap_mark: str = "…", as_list: bool = False, recursion_level: int = 0, verbose: bool = False, check: bool = False):
+def gen_skippy_ngrams(L: list, n_for_ngram: int, max_gap_size: int = None, extended: bool = True, inclusive: bool = True, recursively: bool = True, sep: str = " ", gap_mark: str = "…", as_list: bool = False, recursion_level: int = 0, verbose: bool = False, check: bool = False):
 
     """
     general generator function that can be called
@@ -263,28 +277,26 @@ def gen_skippy_ngrams(L: list, n_for_ngram: int, max_gap_size: int = None, exten
     ##
     if check:
         print(f"#recursion_level: {recursion_level}")
-    
+
     ## confirm assumption
     assert n_for_ngram > 0
-    
+
     ## filter out empty elements
     base_segs = [ seg for seg in L if len(seg) > 0 ]
-    
+
     ##
     n_base_segs = len(base_segs)
-    if n_base_segs <= n_for_ngram:
+    if n_base_segs < n_for_ngram:
         if recursively:
             recursion_level += 1
             G = gen_skippy_ngrams(base_segs, n_for_ngram - recursion_level, max_gap_size = max_gap_size, extended = extended, inclusive = inclusive, recursively = recursively, sep = sep, gap_mark = gap_mark, as_list = as_list, recursion_level = recursion_level, verbose = verbose, check = check)
+            G = make_unique(G)
+            if check:
+                print(f"#G in recursion level = {recursion_level}: {G}")
             if as_list:
-                if not segs in G:
-                    G = G + [ base_segs ]
                 return G
             else:
-                g = sep.join(base_segs)
-                if not g in G:
-                    G.append(base_segs)
-                return [ sep.join(base_segs) for segs in G ] 
+                return [ sep.join(segs) for segs in G ]
         else:
             if as_list:
                 return [ base_segs ]
@@ -304,7 +316,7 @@ def gen_skippy_ngrams(L: list, n_for_ngram: int, max_gap_size: int = None, exten
     subsegs_full = [ x for x in subsegs_full if type(x) is list or type(x) is tuple ]
     if check:
         print(f"#subsegs_full (size: {len(subsegs_full)}): {subsegs_full}")
-    
+
     ## create subsegs_base with considration of max_gap_size
     if divided:
         subsegs_base = []
@@ -318,7 +330,7 @@ def gen_skippy_ngrams(L: list, n_for_ngram: int, max_gap_size: int = None, exten
     base_size = len(subsegs_base)
     if check:
         print(f"#subsegs_base (size: {base_size}): {subsegs_base}")
-    
+
     ## generate a lattice of segs, with or without subdivision
     import itertools
     ##P = itertools.product(gen_source(segs)) # not work!
@@ -326,10 +338,10 @@ def gen_skippy_ngrams(L: list, n_for_ngram: int, max_gap_size: int = None, exten
     P = filter_segs(subsegs_base, n_for_ngram, max_gap_size, extended = extended, inclusive = inclusive, gap_mark = gap_mark, verbose = verbose, check = check)
     if check:
         print(f"#P0 [size: {len(P)}]: {P}")
-        
+
     ## The following is incompatible with recursively = True
-    if not inclusive:
-        P = [ p for p in P if count_elements(p, gap_mark = gap_mark) == n_for_ngram ]
+    #if not inclusive:
+    #    P = [ p for p in P if count_elements(p, gap_mark = gap_mark) == n_for_ngram ]
     if check:
         print(f"#P1 [size: {len(P)}]: {P}")
 
@@ -338,25 +350,25 @@ def gen_skippy_ngrams(L: list, n_for_ngram: int, max_gap_size: int = None, exten
     for i, p in enumerate(P):
         if check and verbose:
             print(f"#p{i}: {p}")
-        
+
         ## simplify a series of gaps
         q = simplify_gaps(p, gap_mark = gap_mark, check = check)
         if check and verbose:
             print(f"#q1: {q}")
-        
+
         ## remove gaps at ends
         if not extended:
             q = drop_gap_at_end(q, gap_mark = gap_mark)
         if check:
             print(f"#q2: {q}")
         Q.append(q)
-    ##
+
+    ## The following in required for obscure reasons...
+    Q = make_unique(Q)
     if check:
         print(f"#Q: {Q}")
-    
+
     ## return
-    if check:
-        print(f"#Q: {Q}")
     if as_list:
         return Q
     else:
@@ -417,7 +429,7 @@ def main():
     """
     test code
     """
-    
+
     t = "abcde"
     u = "abc"
     docs = [ t, u ]
@@ -425,18 +437,18 @@ def main():
     #docs = [ doc for doc in docs if len(doc) <= max_seg_n ]
     print(f"docs: {docs}")
     as_list = False
-    extended = True
+    extended = False
     inclusive = True
     max_n_for_ngram = 4
     max_gap_size = max(len(doc) for doc in docs)
     verbose = False
     check = False
-    
+
     ## test gen_skippy_ngrams
     show_normal_ngrams = False
     if show_normal_ngrams:
         test_gen_ngrams(docs, max_n_for_ngram = max_n_for_ngram, inclusive = inclusive, as_list = as_list, verbose = verbose, check = check)
-    
+
     ## test gen_ngrams
     test_gen_skippy_ngrams(docs, max_n_for_ngram = max_n_for_ngram, max_gap_size = max_gap_size, extended = extended, inclusive = inclusive, as_list = as_list, verbose = verbose, check = check)
 
