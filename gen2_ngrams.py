@@ -275,7 +275,7 @@ def gen_skippy_ngrams(L: list, n_for_ngram: int, max_gap_size: int = None, exten
     if n_base_segs <= n_for_ngram:
         if recursively:
             recursion_level += 1
-            G = gen_skippy_ngrams(segs, n_for_ngram - recursion_level, max_gap_size = max_gap_size, extended = extended, inclusive = inclusive, recursively = recursively, sep = sep, gap_mark = gap_mark, as_list = as_list, recursion_level = recursion_level, verbose = verbose, check = check)
+            G = gen_skippy_ngrams(base_segs, n_for_ngram - recursion_level, max_gap_size = max_gap_size, extended = extended, inclusive = inclusive, recursively = recursively, sep = sep, gap_mark = gap_mark, as_list = as_list, recursion_level = recursion_level, verbose = verbose, check = check)
             if as_list:
                 if not segs in G:
                     G = G + [ base_segs ]
@@ -419,17 +419,18 @@ def main():
     """
     
     t = "abcde"
-    docs = [ t ]
+    u = "abc"
+    docs = [ t, u ]
     #max_seg_n = 5
     #docs = [ doc for doc in docs if len(doc) <= max_seg_n ]
     print(f"docs: {docs}")
     as_list = False
     extended = True
-    inclusive = False
+    inclusive = True
     max_n_for_ngram = 4
     max_gap_size = max(len(doc) for doc in docs)
     verbose = False
-    check = True
+    check = False
     
     ## test gen_skippy_ngrams
     show_normal_ngrams = False
