@@ -8,14 +8,15 @@ This is a Python script for generation of normal (i.e., continuous) n-grams and 
 
 This script is a re-implementation of gen_ngrams.py and dispenses with gen_extended_skippy_ngrams(..). There are two main differences from its predecessor. First, gen_skippy_ngrams(..) generates extended skippy n-grams with option extended = True. Second, gen_skippy_ngrams(..) optionally generates inclusive n-grams by "inclusive = True" option, thereby dispensing with incremental generation of 1-gram up to n-grams afterwards.
 
-Created on 2025/08/20 by Kow Kuroda (kow.kuroda@gmail.com)
+Creation
+2025/08/20 by Kow Kuroda (kow.kuroda@gmail.com)
 
 Modifications
 2025/08/21 1) revised the algorithm to avoid unwanted removal of duplicates; 2) simplified the processing;
 2025/08/22 made minor changes;
 2025/08/26 fixed bugs in filtering of p from P, where non-extended cases are treated as extended ones;
 2025/08/28 implemented a better solution to mishandling of n_for_ngram in recursion;
-
+2025/08/29 fixed bugs of seg duplication, overgenerate segs and settled on first product release version;
 """
 
 ##
@@ -130,6 +131,94 @@ def remove_gaps(segs: list, gap_mark: str):
     return [ seg for seg in segs if seg != gap_mark ]
 
 ##
+def filter_segs(subsegs_pool: list, n_for_ngram: int, max_gap_size: int, extended: bool = True, inclusive: bool = True, gap_mark: str = "…", verbose: bool = False, check: bool = False):
+
+    if check and verbose:
+        print(f"#max_gap_size: {max_gap_size}")
+    import itertools
+    Q = [ ]; xQ = [ ] # checker of iso-forms
+    for i, subsegs in enumerate(subsegs_pool):
+        if check:
+            print(f"#{i} subsegs: {subsegs}")
+
+        ## process over the segs of a given subsegs
+        #for segs in list(itertools.product(*gen_source(subsegs))):
+        ## The following code replaced the above to increase Cython-compatibility
+        for i, segs in enumerate([ list(x) for x in itertools.product(*gen_source(subsegs)) ]):
+            if check:
+                print(f"#{i} segs: {segs}")
+
+            ## define xsegs for later reference
+            n_segs = len(segs)
+            n_elements = count_elements(segs, gap_mark)
+            n_gaps = count_gaps(segs, gap_mark)
+            xsegs = simplify_gaps(segs, gap_mark = gap_mark, check = check)
+
+            ## exclude sequences of gap_markers
+            if n_elements == 0:
+                if check:
+                    print(f"#ignored: {segs} [n_elements: {n_elements} == 0]\n...")
+                continue
+
+            ## excludes segs longer then max_gap_size
+            pad = 2
+            if n_segs > max_gap_size + pad:
+                if check:
+                    print(f"#ignored: {segs} [n_segs: {n_segs} > max_gap_size: {max_gap_size}]\n...")
+                continue
+
+            ## excludes if count_elements(p) > n_for_ngram
+            if n_elements > n_for_ngram:
+                if check:
+                    print(f"#ignored: {segs} [n_elements: {n_elements} > n_for_ngram: {n_for_ngram}]\n...")
+                continue
+
+            ## includes if and only if count_elements(p) == n_for_ngram
+            if inclusive:
+                pass
+            else:
+                if n_elements < n_for_ngram:
+                    if check:
+                        print(f"#ignored: {segs} [n_elements: {n_elements} < n_for_ngram: {n_for_ngram}]\n...")
+                    continue
+
+            ## select by extendedness
+            if extended:
+                if n_elements == 1 and n_gaps == 0:
+                    if check:
+                        print(f"#ignored: {segs} [n_elements == 1 or n_gaps == 0]\n...")
+                    continue
+                else:
+                    #print(f"#included: {segs}")
+                    pass
+            else: # complicated selection for segs
+                if segs[0] != gap_mark or segs[-1] != gap_mark:
+                    if segs not in Q and xsegs not in xQ:
+                        Q.append(segs)
+                        xQ.append(xsegs)
+                elif segs[0] == gap_mark or segs[-1] == gap_mark:
+                    if n_elements == 1:
+                        if not segs in Q and not xsegs in xQ:
+                            Q.append(segs)
+                            xQ.append(xsegs)
+                    else:
+                        if check:
+                            print(f"#ignored: {segs} [segs[0] or segs[-1] == gap_mark]\n...")
+                        continue
+            ##
+            if check:
+                print(f"#xsegs: {xsegs}")
+            if not segs in Q and not xsegs in xQ:
+                Q.append(segs)
+                xQ.append(xsegs)
+    ##
+    if check and verbose:
+        print(f"#xQ [size: {len(xQ)}]: {xQ}")
+    if check:
+        print(f"#Q [size: {len(Q)}]: {Q}")
+    return Q
+
+##
 ## Beware to make recursively = True. it procudes extra strings;
 def gen_ngrams (S: list, n_for_ngram: int, inclusive: bool = False, recursively: bool = False, sep: str = " ", as_list: bool = False, check: bool = False):
 
@@ -183,92 +272,7 @@ def gen_ngrams (S: list, n_for_ngram: int, inclusive: bool = False, recursively:
         return [ sep.join(r) for r in R ]
 
 ##
-##
-def filter_segs(subsegs_pool: list, n_for_ngram: int, max_gap_size: int, extended: bool = True, inclusive: bool = True, gap_mark: str = "…", verbose: bool = False, check: bool = False):
-
-    if check and verbose:
-        print(f"#max_gap_size: {max_gap_size}")
-    import itertools
-    Q = [ ]; xQ = [ ] # checker of iso-forms
-    for i, subsegs in enumerate(subsegs_pool):
-        if check:
-            print(f"#{i} subsegs: {subsegs}")
-
-        ## process over the segs of a given subsegs
-        #for segs in list(itertools.product(*gen_source(subsegs))):
-        ## The following code increases Cython-compatibility
-        for i, segs in enumerate([ list(x) for x in itertools.product(*gen_source(subsegs)) ]):
-            if check:
-                print(f"#{i} segs: {segs}")
-
-            ## define xsegs for later reference
-            n_segs = len(segs)
-            n_elements = count_elements(segs, gap_mark)
-            n_gaps = count_gaps(segs, gap_mark)
-            xsegs = simplify_gaps(segs, gap_mark = gap_mark, check = check)
-
-            ## exclude sequences of gap_markers
-            if n_elements == 0:
-                if check:
-                    print(f"#ignored: {segs} [n_elements: {n_elements} == 0]\n...")
-                continue
-
-            ## excludes segs longer then max_gap_size
-            if n_segs > max_gap_size:
-                if check:
-                    print(f"#ignored: {segs} [n_segs: {n_segs} > max_gap_size: {max_gap_size}]\n...")
-                continue
-
-            ## excludes if count_elements(p) > n_for_ngram
-            if n_elements > n_for_ngram:
-                if check:
-                    print(f"#ignored: {segs} [n_elements: {n_elements} > n_for_ngram: {n_for_ngram}]\n...")
-                continue
-
-            ## includes if and only if count_elements(p) == n_for_ngram
-            if inclusive:
-                pass
-            else:
-                if n_elements < n_for_ngram:
-                    if check:
-                        print(f"#ignored: {segs} [n_elements: {n_elements} < n_for_ngram: {n_for_ngram}]\n...")
-                    continue
-
-            ## select by extendedness
-            if extended:
-                if n_elements == 1 and n_gaps == 0:
-                    if check:
-                        print(f"#ignored: {segs} [n_elements == 1 or n_gaps == 0]\n...")
-                    continue
-            else: # complicated selection for segs
-                if segs[0] != gap_mark or segs[-1] != gap_mark:
-                    if segs not in Q and xsegs not in xQ:
-                        Q.append(segs)
-                        xQ.append(xsegs)
-                elif segs[0] == gap_mark or segs[-1] == gap_mark:
-                    if n_elements == 1:
-                        if not segs in Q and not xsegs in xQ:
-                            Q.append(segs)
-                            xQ.append(xsegs)
-                    else:
-                        if check:
-                            print(f"#ignored: {segs} [segs[0] or segs[-1] == gap_mark]\n...")
-                        continue
-            ##
-            if check:
-                print(f"#xsegs: {xsegs}")
-            if not segs in Q and not xsegs in xQ:
-                Q.append(segs)
-                xQ.append(xsegs)
-    ##
-    if check and verbose:
-        print(f"#xQ [size: {len(xQ)}]: {xQ}")
-    if check:
-        print(f"#Q [size: {len(Q)}]: {Q}")
-    return Q
-
-##
-def gen_skippy_ngrams(L: list, n_for_ngram: int, max_gap_size: int = None, extended: bool = True, inclusive: bool = True, recursively: bool = True, sep: str = " ", gap_mark: str = "…", as_list: bool = False, recursion_level: int = 0, verbose: bool = False, check: bool = False):
+def gen_skippy_ngrams(L: list, n_for_ngram: int, max_gap_size: int = None, extended: bool = True, inclusive: bool = True, recursively: bool = True, sep: str = " ", gap_mark: str = "…", as_list: bool = False, recursion_level: int = 0, verbose: bool = False, sort_elements: bool = False, check: bool = False):
 
     """
     general generator function that can be called
@@ -339,17 +343,11 @@ def gen_skippy_ngrams(L: list, n_for_ngram: int, max_gap_size: int = None, exten
     if check:
         print(f"#P0 [size: {len(P)}]: {P}")
 
-    ## The following is incompatible with recursively = True
-    #if not inclusive:
-    #    P = [ p for p in P if count_elements(p, gap_mark = gap_mark) == n_for_ngram ]
-    if check:
-        print(f"#P1 [size: {len(P)}]: {P}")
-
     ## regulate gaps
     Q = [ ]
     for i, p in enumerate(P):
         if check and verbose:
-            print(f"#p{i}: {p}")
+            print(f"#{i} p: {p}")
 
         ## simplify a series of gaps
         q = simplify_gaps(p, gap_mark = gap_mark, check = check)
@@ -361,18 +359,52 @@ def gen_skippy_ngrams(L: list, n_for_ngram: int, max_gap_size: int = None, exten
             q = drop_gap_at_end(q, gap_mark = gap_mark)
         if check:
             print(f"#q2: {q}")
-        Q.append(q)
-
-    ## The following in required for obscure reasons...
-    Q = make_unique(Q)
+        
+        ## prevent duplicates
+        if q not in Q:
+            Q.append(q)
+        else:
+            if check:
+                print(f"#ignored q: {q}")
+    ##
     if check:
-        print(f"#Q: {Q}")
+        print(f"#Q [size: {len(Q)}]: {Q}")
+
+    ## remove overgenerated segs
+    O = []
+    for q in Q:
+        #c= q.copy() # ineffective
+        c1 = q.copy()
+        c2 = q.copy()
+        c1.append(gap_mark) # not c1 = c.append(gap_mark)
+        c2.insert(0, gap_mark) # not c2 = c.insert(0, gap_mark)
+        if check and verbose:
+            print(f"#c1: {c1}")
+            print(f"#c2: {c2}")
+        if c1 in Q:
+            if check:
+                print(f"#removed {q}")
+        elif c2 in Q:
+            if check:
+                print(f"#removed {q}")
+        else:
+            O.append(q)
+            if check:
+                print(f"#kept: {q}")
+    
+    ## sort elements by length
+    if sort_elements:
+        O = sorted(O, key = lambda x: len(x), reverse = True)
+    
+    ##
+    if check:
+        print(f"#O [size: {len(O)}]: {O}")
 
     ## return
     if as_list:
-        return Q
+        return O
     else:
-        return [ sep.join(x) for x in Q ]
+        return [ sep.join(x) for x in O ]
 
 ## aliases
 gen_sk_ngrams = gen_skippy_ngrams
@@ -431,13 +463,14 @@ def main():
     """
 
     t = "abcde"
+    docs = [t]
     u = "abc"
-    docs = [ t, u ]
+    #docs.append(u)
     #max_seg_n = 5
     #docs = [ doc for doc in docs if len(doc) <= max_seg_n ]
     print(f"docs: {docs}")
     as_list = False
-    extended = False
+    extended = True
     inclusive = True
     max_n_for_ngram = 4
     max_gap_size = max(len(doc) for doc in docs)
