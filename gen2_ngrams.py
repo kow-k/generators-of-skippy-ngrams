@@ -16,7 +16,7 @@ Modifications
 2025/08/22 made minor changes;
 2025/08/26 fixed bugs in filtering of p from P, where non-extended cases are treated as extended ones;
 2025/08/28 implemented a better solution to mishandling of n_for_ngram in recursion;
-2025/08/29 fixed bugs of seg duplication, overgenerate segs and settled on first product release version;
+2025/08/29 fixed bugs of seg duplication, overgenerate segs and settled on release 1;
 """
 
 ##
